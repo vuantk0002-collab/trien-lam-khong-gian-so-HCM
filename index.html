@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Triển lãm Số 3D - Không gian Văn hóa Hồ Chí Minh | Tổ 1 - 12A20</title>
+    
+    <!-- Google Fonts: Baloo 2 & Nunito -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        crimson: '#8B0000',
+                        crimsonDark: '#5C0000',
+                        gold: '#D4AF37',
+                        goldLight: '#F3E5AB',
+                        cream: '#FFFDF7',
+                    },
+                    fontFamily: {
+                        heading: ['"Baloo 2"', 'cursive'],
+                        body: ['"Nunito"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Nunito', sans-serif;
+            background-color: #1a0a0a;
+            user-select: none;
+        }
+        #canvas-container {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+            touch-action: none;
+        }
+        #canvas-container:active {
+            cursor: grabbing;
+        }
+        .glass-panel {
+            background: rgba(92, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(212, 175, 55, 0.45);
+        }
+        .glass-light {
+            background: rgba(255, 253, 247, 0.96);
+            backdrop-filter: blur(12px);
+            border: 2px solid #D4AF37;
+        }
+        .gold-glow {
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.35);
+        }
+        /* Custom scrollbar for modal description */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f5efe0;
+            border-radius: 8px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #D4AF37;
+            border-radius: 8px;
+        }
+        @keyframes pulseGold {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.6); }
+            50% { box-shadow: 0 0 0 10px rgba(212, 175, 55, 0); }
+        }
+        .btn-pulse {
+            animation: pulseGold 2s infinite;
+        }
+    </style>
+</head>
+<body class="text-cream">
+
+    <!-- 3D Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- Top Header Bar -->
+    <header class="fixed top-0 left-0 right-0 z-20 p-2 sm:p-3 pointer-events-none">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+            <!-- Brand Title -->
+            <div class="glass-panel rounded-2xl px-3 py-2 sm:px-4 sm:py-2.5 flex items-center gap-2.5 pointer-events-auto shadow-lg">
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-gold to-yellow-600 flex items-center justify-center text-crimsonDark font-heading font-extrabold text-lg sm:text-xl shadow-inner shrink-0">
+                    ★
+                </div>
+                <div class="leading-tight">
+                    <h1 class="font-heading font-bold text-sm sm:text-base md:text-lg text-goldLight tracking-wide">
+                        KHÔNG GIAN VĂN HÓA HỒ CHÍ MINH
+                    </h1>
+                    <p class="text-[11px] sm:text-xs text-cream/85 font-semibold">
+                        Nhóm 1 - Lớp 12A20 - THPT Linh Trung
+                    </p>
+                </div>
+            </div>
+
+            <!-- Right Action Buttons -->
+            <div class="flex items-center gap-2 pointer-events-auto">
+                <!-- Hidden File Input for 20 local images -->
+                <input type="file" id="image-upload-input" multiple accept="image/*" class="hidden">
+                <button id="btn-upload-images" class="glass-panel hover:bg-crimson text-goldLight hover:text-white transition-all rounded-xl px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-lg active:scale-95">
+                    <span>📂</span>
+                    <span class="hidden sm:inline">Nạp 20 ảnh từ máy</span>
+                    <span class="sm:hidden">Nạp ảnh</span>
+                </button>
+                <button id="btn-help" title="Hướng dẫn điều khiển" class="glass-panel hover:bg-crimson text-goldLight hover:text-white transition-all rounded-xl px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-bold shadow-lg active:scale-95">
+                    ❓
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-300 translate-y-[-10px]">
+        <div class="bg-crimsonDark border-2 border-gold text-cream px-5 py-2.5 rounded-2xl shadow-2xl font-bold text-sm flex items-center gap-2">
+            <span id="toast-icon">✨</span>
+            <span id="toast-message">Thông báo</span>
+        </div>
+    </div>
+
+    <!-- Bottom Control Bar -->
+    <nav class="fixed bottom-3 left-0 right-0 z-20 px-2 sm:px-4 pointer-events-none">
+        <div class="max-w-3xl mx-auto glass-panel rounded-2xl p-2 sm:p-2.5 flex flex-wrap items-center justify-between gap-2 pointer-events-auto shadow-2xl">
+            
+            <!-- Prev / Counter / Next -->
+            <div class="flex items-center gap-1.5 sm:gap-2 flex-1 justify-center sm:justify-start">
+                <button id="btn-prev" class="bg-crimson hover:bg-red-800 border border-gold/60 text-cream rounded-xl px-3 py-2 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold transition-all active:scale-95 flex items-center gap-1">
+                    <span>⬅️</span>
+                    <span class="hidden sm:inline">Bức trước</span>
+                </button>
+
+                <div class="bg-black/40 border border-gold/40 rounded-xl px-3 py-2 text-xs sm:text-sm font-heading font-bold text-goldLight min-w-[115px] sm:min-w-[135px] text-center">
+                    Tác phẩm <span id="artwork-counter" class="text-white text-sm sm:text-base">01</span> / 20
+                </div>
+
+                <button id="btn-next" class="bg-crimson hover:bg-red-800 border border-gold/60 text-cream rounded-xl px-3 py-2 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold transition-all active:scale-95 flex items-center gap-1">
+                    <span class="hidden sm:inline">Bức tiếp theo</span>
+                    <span>➡️</span>
+                </button>
+            </div>
+
+            <!-- Auto Tour & Reset View -->
+            <div class="flex items-center gap-1.5 sm:gap-2 justify-center w-full sm:w-auto">
+                <button id="btn-autotour" class="flex-1 sm:flex-none bg-gradient-to-r from-gold to-yellow-600 hover:from-yellow-400 hover:to-gold text-crimsonDark rounded-xl px-3.5 py-2 text-xs sm:text-sm font-extrabold transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5">
+                    <span id="autotour-icon">▶️</span>
+                    <span id="autotour-text">Tự động tham quan</span>
+                </button>
+                <button id="btn-reset" title="Về giữa sảnh" class="bg-white/10 hover:bg-white/20 border border-gold/40 text-goldLight rounded-xl px-3 py-2 text-xs sm:text-sm font-bold transition-all active:scale-95">
+                    🏛️
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Welcome Screen Overlay -->
+    <div id="welcome-overlay" class="fixed inset-0 z-40 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 transition-opacity duration-500">
+        <div class="glass-light rounded-3xl max-w-lg w-full p-6 sm:p-8 text-center text-gray-800 shadow-2xl gold-glow relative overflow-hidden">
+            <!-- Top Decorative Ribbon -->
+            <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-crimson via-gold to-crimson"></div>
+            
+            <div class="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-crimson to-crimsonDark border-2 border-gold flex items-center justify-center text-gold text-3xl shadow-lg">
+                ★
+            </div>
+            
+            <p class="text-xs sm:text-sm font-extrabold uppercase tracking-widest text-crimson mb-1">
+                Nhóm 1 - Lớp 12A20 - THPT Linh Trung
+            </p>
+            <h2 class="font-heading font-extrabold text-2xl sm:text-3xl text-crimsonDark leading-tight mb-3">
+                TRIỂN LÃM SỐ 3D<br>KHÔNG GIAN VĂN HÓA HỒ CHÍ MINH
+            </h2>
+            <p class="text-sm text-gray-700 mb-5 leading-relaxed">
+                Khám phá 20 tư liệu quý giá về cuộc đời, sự nghiệp, tư tưởng, đạo đức và phong cách Chủ tịch Hồ Chí Minh trong không gian bảo tàng ảo tương tác 360°.
+            </p>
+
+            <!-- Quick Controls Guide -->
+            <div class="bg-amber-50/90 border border-gold/50 rounded-2xl p-3.5 mb-6 text-left text-xs sm:text-sm space-y-1.5 text-gray-700">
+                <div class="flex items-center gap-2"><span class="text-base">🖱️</span> <span><strong>Kéo chuột / Vuốt màn hình:</strong> Xoay góc nhìn 360°</span></div>
+                <div class="flex items-center gap-2"><span class="text-base">⌨️</span> <span><strong>Phím W A S D / Mũi tên:</strong> Di chuyển tự do trong sảnh</span></div>
+                <div class="flex items-center gap-2"><span class="text-base">🖼️</span> <span><strong>Nhấp vào khung tranh:</strong> Xem phóng to & Nghe thuyết minh</span></div>
+                <div class="flex items-center gap-2"><span class="text-base">📂</span> <span><strong>Nạp ảnh từ máy:</strong> Dán trực tiếp 20 ảnh của bạn lên tường 3D</span></div>
+            </div>
+
+            <button id="btn-start-tour" class="btn-pulse w-full bg-gradient-to-r from-crimson to-crimsonDark hover:from-red-800 hover:to-crimson text-goldLight font-heading font-bold text-lg py-3.5 px-6 rounded-2xl border-2 border-gold transition-all active:scale-95 shadow-xl">
+                🏛️ Bắt đầu tham quan 3D
+            </button>
+        </div>
+    </div>
+
+    <!-- Lightbox Modal for Artwork Details -->
+    <div id="artwork-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-5">
+        <div class="glass-light rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col md:flex-row overflow-hidden shadow-2xl relative">
+            
+            <!-- Close Button -->
+            <button id="btn-close-modal" class="absolute top-3 right-3 z-10 w-10 h-10 rounded-full bg-crimson hover:bg-crimsonDark text-goldLight border border-gold flex items-center justify-center font-bold text-lg shadow-lg transition-transform active:scale-90">
+                ✕
+            </button>
+
+            <!-- Left: High-res Image Preview -->
+            <div class="w-full md:w-1/2 bg-crimsonDark/95 p-4 flex items-center justify-center relative min-h-[260px] max-h-[45vh] md:max-h-[85vh]">
+                <img id="modal-image" src="" alt="Tư liệu triển lãm" class="max-h-full max-w-full object-contain rounded-xl border-2 border-gold shadow-2xl">
+                <span id="modal-badge" class="absolute top-3 left-3 bg-gold text-crimsonDark font-heading font-extrabold text-xs sm:text-sm px-3 py-1 rounded-xl shadow">
+                    Tác phẩm 01 / 20
+                </span>
+            </div>
+
+            <!-- Right: Info & Speech Controls -->
+            <div class="w-full md:w-1/2 p-5 sm:p-6 flex flex-col justify-between bg-cream text-gray-800 overflow-y-auto custom-scroll">
+                <div>
+                    <p id="modal-category" class="text-xs font-extrabold uppercase tracking-wider text-crimson mb-1">
+                        CHUYÊN ĐỀ
+                    </p>
+                    <h3 id="modal-title" class="font-heading font-extrabold text-xl sm:text-2xl text-crimsonDark leading-snug mb-3">
+                        Tiêu đề tác phẩm
+                    </h3>
+                    <div class="w-16 h-1 bg-gold rounded-full mb-4"></div>
+                    <p id="modal-desc" class="text-sm sm:text-base text-gray-700 leading-relaxed mb-5">
+                        Nội dung mô tả chi tiết...
+                    </p>
+                </div>
+
+                <div class="space-y-3 pt-3 border-t border-gold/30">
+                    <!-- Voice Narration Button -->
+                    <button id="btn-speak" class="w-full bg-gradient-to-r from-crimson to-crimsonDark hover:from-red-800 hover:to-crimson text-goldLight border border-gold font-bold py-3 px-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md">
+                        <span id="speak-icon">🔊</span>
+                        <span id="speak-text">Nghe thuyết minh (Tiếng Anh)</span>
+                    </button>
+
+                    <!-- Modal Prev / Next -->
+                    <div class="flex items-center justify-between gap-2">
+                        <button id="modal-prev" class="flex-1 bg-amber-100 hover:bg-amber-200 text-crimsonDark font-bold py-2.5 px-3 rounded-xl text-xs sm:text-sm transition-all active:scale-95">
+                            ⬅️ Tác phẩm trước
+                        </button>
+                        <button id="modal-next" class="flex-1 bg-amber-100 hover:bg-amber-200 text-crimsonDark font-bold py-2.5 px-3 rounded-xl text-xs sm:text-sm transition-all active:scale-95">
+                            Tác phẩm sau ➡️
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main 3D Application Script -->
+    <script>
+        /* ==========================================================================
+           1. DỮ LIỆU 20 TÁC PHẨM KHÔNG GIAN VĂN HÓA HỒ CHÍ MINH
+           ========================================================================== */
+        const ARTWORKS_DATA = [
+            {
+                id: 1,
+                category: "Chân dung & Tiểu sử",
+                title: "Chủ tịch Hồ Chí Minh (19/5/1890 – 02/9/1969)",
+                desc: "Chủ tịch Hồ Chí Minh – Anh hùng giải phóng dân tộc, Nhà văn hóa kiệt xuất của Việt Nam. Người đã hiến dâng trọn đời mình cho sự nghiệp cách mạng của Đảng và dân tộc, để lại di sản tư tưởng, đạo đức và phong cách vô giá cho các thế hệ mai sau.",
+                titleEn: "President Ho Chi Minh (May 19, 1890 – September 2, 1969)",
+                descEn: "President Ho Chi Minh, National Liberation Hero and Outstanding Man of Culture of Vietnam. He dedicated his entire life to the revolutionary cause of the Party and the nation, leaving behind an invaluable legacy of ideology, ethics, and lifestyle for future generations."
+            },
+            {
+                id: 2,
+                category: "Cuộc đời & Sự nghiệp cách mạng",
+                title: "Thời niên thiếu tại Làng Sen & Quê hương Nghệ An (1890 – 1909)",
+                desc: "Sinh ra tại làng Hoàng Trù và lớn lên ở Làng Sen (Kim Liên, Nam Đàn, Nghệ An) trong một gia đình nhà nho yêu nước, người thanh niên Nguyễn Sinh Cung sớm nuôi dưỡng lòng yêu nước thương dân và ý chí tìm đường cứu nước.",
+                titleEn: "Childhood in Lang Sen and Nghe An Homeland (1890 – 1909)",
+                descEn: "Born in Hoang Tru village and raised in Lang Sen, Kim Lien, Nam Dan, Nghe An in a patriotic Confucian scholarly family, young Nguyen Sinh Cung early nurtured deep love for his country and people, along with the determination to find a path to national salvation."
+            },
+            {
+                id: 3,
+                category: "Cuộc đời & Sự nghiệp cách mạng",
+                title: "Ra đi tìm đường cứu nước tại Bến Nhà Rồng (1911 – 1919)",
+                desc: "Ngày 5/6/1911, từ Bến cảng Nhà Rồng (Sài Gòn), người thanh niên Nguyễn Tất Thành lên tàu Amiral Latouche-Tréville ra đi tìm đường cứu nước. Năm 1919, Người gửi Bản Yêu sách của nhân dân An Nam tới Hội nghị Versailles.",
+                titleEn: "Departure to Seek National Salvation at Nha Rong Wharf (1911 – 1919)",
+                descEn: "On June 5, 1911, from Nha Rong Wharf in Saigon, young Nguyen Tat Thanh boarded the ship Amiral Latouche-Treville to seek a path for national salvation. In 1919, he submitted the Demands of the Annamite People to the Versailles Peace Conference."
+            },
+            {
+                id: 4,
+                category: "Cuộc đời & Sự nghiệp cách mạng",
+                title: "Tìm thấy ánh sáng Chủ nghĩa Mác – Lênin (1920 – 1924)",
+                desc: "Năm 1920, Nguyễn Ái Quốc đọc Sơ thảo lần thứ nhất những luận cương về vấn đề dân tộc và thuộc địa của V.I. Lênin, tìm thấy con đường cứu nước đúng đắn và trở thành một trong những người sáng lập Đảng Cộng sản Pháp.",
+                titleEn: "Finding the Light of Marxism–Leninism (1920 – 1924)",
+                descEn: "In 1920, Nguyen Ai Quoc read Vladimir Lenin's First Draft of Theses on the National and Colonial Questions, discovering the true path to national liberation and becoming one of the founding members of the French Communist Party."
+            },
+            {
+                id: 5,
+                category: "Cuộc đời & Sự nghiệp cách mạng",
+                title: "Thành lập Đảng Cộng sản Việt Nam (1925 – 1930)",
+                desc: "Từ việc sáng lập Hội Việt Nam Cách mạng Thanh niên (1925) đến Hội nghị hợp nhất các tổ chức cộng sản đầu năm 1930, Nguyễn Ái Quốc đã sáng lập Đảng Cộng sản Việt Nam, mở ra bước ngoặt vĩ đại trong lịch sử dân tộc.",
+                titleEn: "Founding of the Communist Party of Vietnam (1925 – 1930)",
+                descEn: "From founding the Vietnam Revolutionary Youth League in 1925 to chairing the conference unifying communist organizations in early 1930, Nguyen Ai Quoc established the Communist Party of Vietnam, marking a historic turning point for the nation."
+            },
+            {
+                id: 6,
+                category: "Cuộc đời & Sự nghiệp cách mạng",
+                title: "Trở về Tổ quốc & Lãnh đạo khởi nghĩa tại Pác Bó (1941 – 1945)",
+                desc: "Sau 30 năm bôn ba hải ngoại, ngày 28/1/1941, Bác trở về Tổ quốc, trực tiếp lãnh đạo phong trào cách mạng tại Pác Bó (Cao Bằng), thành lập Mặt trận Việt Minh và chuẩn bị lực lượng cho Tổng khởi nghĩa Tháng Tám.",
+                titleEn: "Returning to the Homeland and Leading the Uprising at Pac Bo (1941 – 1945)",
+                descEn: "After thirty years abroad, on January 28, 1941, Uncle Ho returned to Vietnam, directly leading the revolutionary movement from Pac Bo in Cao Bang, establishing the Viet Minh Front, and preparing forces for the August General Uprising."
+            },
+            {
+                id: 7,
+                category: "Cuộc đời & Sự nghiệp cách mạng",
+                title: "Đọc Tuyên ngôn Độc lập & Khai sinh nước Việt Nam Dân chủ Cộng hòa (1945)",
+                desc: "Ngày 2/9/1945, tại Quảng trường Ba Đình lịch sử, Chủ tịch Hồ Chí Minh đọc bản Tuyên ngôn Độc lập, trịnh trọng tuyên bố trước quốc dân đồng bào và thế giới sự ra đời của nước Việt Nam Dân chủ Cộng hòa.",
+                titleEn: "Reading the Declaration of Independence and Establishing the Democratic Republic of Vietnam (1945)",
+                descEn: "On September 2, 1945, at historic Ba Dinh Square, President Ho Chi Minh read the Declaration of Independence, solemnly proclaiming to the Vietnamese people and the world the birth of the Democratic Republic of Vietnam."
+            },
+            {
+                id: 8,
+                category: "Cuộc đời & Sự nghiệp cách mạng",
+                title: "Lãnh đạo kháng chiến & Di chúc thiêng liêng (1946 – 1969)",
+                desc: "Chủ tịch Hồ Chí Minh lãnh đạo toàn dân tiến hành hai cuộc kháng chiến trường kỳ chống thực dân Pháp và đế quốc Mỹ. Trước lúc đi xa, Người để lại bản Di chúc lịch sử chứa chan tình yêu thương và niềm tin tất thắng.",
+                titleEn: "Leading the Resistance Wars and the Sacred Testament (1946 – 1969)",
+                descEn: "President Ho Chi Minh led the entire nation through two protracted resistance wars against French colonialism and American imperialism. Before his passing, he left behind his historic Testament filled with boundless love and unshakable faith in final victory."
+            },
+            {
+                id: 9,
+                category: "Tư tưởng, Đạo đức, Phong cách",
+                title: "Đạo đức cách mạng: Cần, Kiệm, Liêm, Chính, Chí công vô tư",
+                desc: "Bác khẳng định đạo đức là gốc của người cách mạng. Phẩm chất Cần, Kiệm, Liêm, Chính, Chí công vô tư là nền tảng xây dựng con người mới xã hội chủ nghĩa và củng cố niềm tin của nhân dân.",
+                titleEn: "Revolutionary Ethics: Diligence, Thrift, Integrity, Uprightness, and Public-Spirited Selflessness",
+                descEn: "Uncle Ho affirmed that morality is the root of a revolutionary. The virtues of Diligence, Thrift, Integrity, Uprightness, and Public-Spirited Selflessness form the foundation for building a new socialist society and strengthening the people's trust."
+            },
+            {
+                id: 10,
+                category: "Tư tưởng, Đạo đức, Phong cách",
+                title: "Hồ Chí Minh với Công an nhân dân",
+                desc: "Sáu điều Bác Hồ dạy Công an nhân dân về tư cách người công an cách mạng luôn là kim chỉ nam cho mọi hành động: Đối với tự mình phải cần, kiệm, liêm, chính; đối với nhân dân phải kính trọng, lễ phép.",
+                titleEn: "Ho Chi Minh and the People's Public Security Forces",
+                descEn: "Uncle Ho's Six Teachings to the People's Public Security Forces on the character of a revolutionary officer remain a guiding compass for all actions: toward oneself, be diligent, thrifty, honest, and upright; toward the people, be respectful and courteous."
+            },
+            {
+                id: 11,
+                category: "Tư tưởng, Đạo đức, Phong cách",
+                title: "Hồ Chí Minh với Quốc hội & Nhà nước của dân, do dân, vì dân",
+                desc: "Chủ tịch Hồ Chí Minh đặt nền móng cho Nhà nước pháp quyền của nhân dân, do nhân dân và vì nhân dân. Người luôn nhấn mạnh mọi cán bộ, công chức đều là công bộc tận tụy của nhân dân.",
+                titleEn: "Ho Chi Minh and the National Assembly and the State of the People, by the People, for the People",
+                descEn: "President Ho Chi Minh laid the foundation for a law-governed state of the people, by the people, and for the people. He consistently emphasized that all cadres and civil servants must serve as devoted public servants of the people."
+            },
+            {
+                id: 12,
+                category: "Tư tưởng, Đạo đức, Phong cách",
+                title: "Hồ Chí Minh với Ngoại giao & Đoàn kết quốc tế",
+                desc: "Với phong cách ngoại giao mềm dẻo nhưng kiên định nguyên tắc 'Dĩ bất biến, ứng vạn biến', Chủ tịch Hồ Chí Minh đã xây dựng tình hữu nghị sâu sắc giữa nhân dân Việt Nam với bạn bè tiến bộ trên toàn thế giới.",
+                titleEn: "Ho Chi Minh with Diplomacy and International Solidarity",
+                descEn: "With a flexible diplomatic style grounded in the steadfast principle of 'maintaining constancy while adapting to all changes,' President Ho Chi Minh cultivated deep friendships between the Vietnamese people and progressive friends around the world."
+            },
+            {
+                id: 13,
+                category: "Tư tưởng, Đạo đức, Phong cách",
+                title: "Hồ Chí Minh với Đồng bào các dân tộc & Tôn giáo",
+                desc: "Tư tưởng đại đoàn kết toàn dân tộc của Bác luôn đề cao sự bình đẳng, tương trợ giữa các dân tộc anh em và đoàn kết lương – giáo, tạo nên sức mạnh vô địch trong công cuộc xây dựng và bảo vệ Tổ quốc.",
+                titleEn: "Ho Chi Minh with Ethnic Minorities and Religious Communities",
+                descEn: "Uncle Ho's ideology of great national unity always upheld equality, mutual support among brotherly ethnic groups, and solidarity between religious and non-religious citizens, creating an invincible strength in building and defending the Fatherland."
+            },
+            {
+                id: 14,
+                category: "Tư tưởng, Đạo đức, Phong cách",
+                title: "Hồ Chí Minh với Quân đội nhân dân Việt Nam",
+                desc: "Là Người Cha thân yêu của các lực lượng vũ trang nhân dân, Bác luôn ân cần thăm hỏi, động viên bộ đội: 'Quân đội ta trung với Đảng, hiếu với dân, sẵn sàng chiến đấu hy sinh vì độc lập, tự do của Tổ quốc'.",
+                titleEn: "Ho Chi Minh and the Vietnam People's Army",
+                descEn: "As the beloved Father of the people's armed forces, Uncle Ho always cared for and encouraged the soldiers: 'Our Army is loyal to the Party, devoted to the people, and ready to fight and sacrifice for the independence and freedom of the Fatherland.'"
+            },
+            {
+                id: 15,
+                category: "Tư tưởng, Đạo đức, Phong cách",
+                title: "Hồ Chí Minh trong lòng bạn bè & Báo chí quốc tế",
+                desc: "Hình ảnh vị lãnh tụ giản dị với đôi dép cao su và bộ quần áo kaki đã trở thành biểu tượng của hòa bình, độc lập dân tộc và khát vọng tự do, được UNESCO vinh danh là Anh hùng giải phóng dân tộc và Nhà văn hóa kiệt xuất.",
+                titleEn: "Ho Chi Minh in the Hearts of International Friends and the Global Press",
+                descEn: "The image of a humble leader in rubber sandals and a simple khaki suit became an enduring symbol of peace, national independence, and the aspiration for freedom, honored by UNESCO as a National Liberation Hero and Outstanding Man of Culture."
+            },
+            {
+                id: 16,
+                category: "Tư tưởng, Đạo đức, Phong cách",
+                title: "Hồ Chí Minh với Thế hệ trẻ & Thanh niên Việt Nam",
+                desc: "Bác dành trọn niềm tin yêu cho thế hệ trẻ – những chủ nhân tương lai của đất nước. Người căn dặn thanh niên phải không ngừng học tập, rèn luyện, xung kích sáng tạo: 'Đâu cần thanh niên có, việc gì khó có thanh niên'.",
+                titleEn: "Ho Chi Minh and the Young Generation and Vietnamese Youth",
+                descEn: "Uncle Ho placed his fullest trust and affection in the younger generation, the future masters of the country. He advised young people to continuously study, train, and pioneer with creativity: 'Wherever youth are needed, youth will be there; whatever task is difficult, youth will overcome it.'"
+            },
+            {
+                id: 17,
+                category: "Tư tưởng, Đạo đức, Phong cách",
+                title: "Hồ Chí Minh với Văn hóa, Giáo dục & Trí thức",
+                desc: "Với quan điểm 'Văn hóa soi đường cho quốc dân đi' và 'Vì lợi ích mười năm thì phải trồng cây, vì lợi ích trăm năm thì phải trồng người', Bác luôn coi trọng phát triển giáo dục, khoa học kỹ thuật và trọng dụng nhân tài.",
+                titleEn: "Ho Chi Minh with Culture, Education, and Intellectuals",
+                descEn: "Guided by the vision that 'Culture lights the way for the nation' and 'For the benefit of ten years, plant trees; for the benefit of a hundred years, cultivate people,' Uncle Ho always prioritized education, science, technology, and cherishing talent."
+            },
+            {
+                id: 18,
+                category: "Tư tưởng, Đạo đức, Phong cách",
+                title: "Hồ Chí Minh với Miền Nam thành đồng Tổ quốc",
+                desc: "'Miền Nam luôn ở trong trái tim tôi' – Tình cảm sâu nặng và nỗi khắc khoải hướng về đồng bào, chiến sĩ miền Nam của Bác là nguồn cổ vũ lớn lao cho ngày non sông thu về một mối.",
+                titleEn: "Ho Chi Minh and the Heroic South of the Fatherland",
+                descEn: "'The South is always in my heart.' Uncle Ho's profound affection and constant longing for the people and soldiers of Southern Vietnam served as a tremendous source of inspiration toward the day of national reunification."
+            },
+            {
+                id: 19,
+                category: "Tư tưởng, Đạo đức, Phong cách",
+                title: "Hồ Chí Minh với Phụ nữ Việt Nam",
+                desc: "Chủ tịch Hồ Chí Minh luôn tôn vinh vai trò to lớn của phụ nữ trong lịch sử dựng nước và giữ nước, trao tặng 8 chữ vàng cao quý: 'Anh hùng, Bất khuất, Trung hậu, Đảm đang'.",
+                titleEn: "Ho Chi Minh and Vietnamese Women",
+                descEn: "President Ho Chi Minh always honored the immense role of women in the history of nation-building and defense, bestowing upon them the eight noble golden words: 'Heroic, Indomitable, Loyal, and Resourceful.'"
+            },
+            {
+                id: 20,
+                category: "Tư tưởng, Đạo đức, Phong cách",
+                title: "Hồ Chí Minh với Thiếu niên, Nhi đồng",
+                desc: "Tình yêu bao la của Bác dành cho các cháu thiếu niên, nhi đồng thể hiện qua 5 điều Bác Hồ dạy, trở thành bài học đầu đời thiêng liêng nuôi dưỡng nhân cách và ước mơ cho bao thế hệ học sinh Việt Nam.",
+                titleEn: "Ho Chi Minh and Teenagers and Children",
+                descEn: "Uncle Ho's boundless love for teenagers and children is embodied in his Five Teachings, which have become sacred foundational lessons nurturing the character and dreams of generations of Vietnamese students."
+            }
+        ];
+
+        /* ==========================================================================
+           2. BIẾN TOÀN CỤC CHO THREE.JS & TRẠNG THÁI ỨNG DỤNG
+           ========================================================================== */
+        let scene, camera, renderer, raycaster;
+        let artworkMeshes = []; // Lưu các mesh poster để raycast và cập nhật texture
+        let artworkDataUrls = new Array(20).fill(null); // Lưu nguồn ảnh hiện tại cho Modal
+
+        // Trạng thái điều khiển Camera
+        let yaw = 0;         // Xoay ngang (radian), 0 = nhìn về -Z (biển hiệu cuối phòng)
+        let pitch = 0;       // Xoay dọc (radian)
+        let isDragging = false;
+        let pointerDownPos = { x: 0, y: 0 };
+        let lastPointerPos = { x: 0, y: 0 };
+        let dragDistance = 0;
+
+        // Di chuyển bàn phím
+        const keysPressed = {};
+        const ROOM_BOUNDS = { minX: -5.4, maxX: 5.4, minZ: -21.5, maxZ: 22.5 };
+
+        // Chế độ lướt mượt (Glide) & Tự động tham quan (Auto-Tour)
+        let currentArtworkIndex = 0; // 0..19
+        let isGliding = false;
+        let glideTargetPos = new THREE.Vector3();
+        let glideTargetYaw = 0;
+        let glideTargetPitch = 0;
+
+        let isAutoTour = false;
+        let autoTourTimer = null;
+
+        // Giọng đọc Web Speech API
+        let isSpeaking = false;
+
+        // Tải trước danh sách giọng đọc khi trình duyệt sẵn sàng
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = () => {
+                window.speechSynthesis.getVoices();
+            };
+        }
+
+        /* ==========================================================================
+           3. TẠO TEXTURE PROCEDURAL (SÀN, THẢM, BIỂN HIỆU, POSTER MẶC ĐỊNH)
+           ========================================================================== */
+        
+        // Tạo texture sàn gỗ/đá ấm sang trọng
+        function createFloorTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#d8c3a5';
+            ctx.fillRect(0, 0, 512, 512);
+
+            // Vẽ các tấm ván gỗ / đá lát tinh tế
+            const tileSize = 128;
+            for (let y = 0; y < 512; y += tileSize) {
+                for (let x = 0; x < 512; x += tileSize) {
+                    const shade = ((x / tileSize + y / tileSize) % 2 === 0) ? '#e3d2b7' : '#d6c1a3';
+                    ctx.fillStyle = shade;
+                    ctx.fillRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
+                    
+                    // Vân nhẹ
+                    ctx.strokeStyle = 'rgba(139, 90, 43, 0.08)';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
+                }
+            }
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(6, 22);
+            return tex;
+        }
+
+        // Tạo texture thảm đỏ viền vàng
+        function createCarpetTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#8B0000';
+            ctx.fillRect(0, 0, 256, 256);
+
+            // Viền vàng hai bên mép thảm
+            ctx.fillStyle = '#D4AF37';
+            ctx.fillRect(10, 0, 12, 256);
+            ctx.fillRect(234, 0, 12, 256);
+            ctx.fillStyle = '#F3E5AB';
+            ctx.fillRect(26, 0, 4, 256);
+            ctx.fillRect(226, 0, 4, 256);
+
+            // Họa tiết chìm nhẹ ở giữa
+            ctx.strokeStyle = 'rgba(212, 175, 55, 0.14)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(128, 20);
+            ctx.lineTo(170, 128);
+            ctx.lineTo(128, 236);
+            ctx.lineTo(86, 128);
+            ctx.closePath();
+            ctx.stroke();
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(1, 16);
+            return tex;
+        }
+
+        // Tạo texture biển hiệu cuối phòng
+        function createBannerTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1400;
+            canvas.height = 420;
+            const ctx = canvas.getContext('2d');
+
+            // Nền đỏ đô gradient
+            const grad = ctx.createLinearGradient(0, 0, 1400, 420);
+            grad.addColorStop(0, '#6b0000');
+            grad.addColorStop(0.5, '#990000');
+            grad.addColorStop(1, '#6b0000');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 1400, 420);
+
+            // Khung viền vàng kép
+            ctx.strokeStyle = '#D4AF37';
+            ctx.lineWidth = 12;
+            ctx.strokeRect(18, 18, 1364, 384);
+            ctx.strokeStyle = '#F3E5AB';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(34, 34, 1332, 352);
+
+            // Ngôi sao vàng ở trên
+            ctx.fillStyle = '#FFD700';
+            ctx.font = 'bold 56px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('★', 700, 108);
+
+            // Chữ chính
+            ctx.fillStyle = '#FFFDF7';
+            ctx.font = '800 68px "Baloo 2", sans-serif';
+            ctx.fillText('KHÔNG GIAN VĂN HÓA HỒ CHÍ MINH', 700, 215);
+
+            // Đường gạch trang trí
+            ctx.fillStyle = '#D4AF37';
+            ctx.fillRect(450, 245, 500, 4);
+
+            // Phụ đề
+            ctx.fillStyle = '#F3E5AB';
+            ctx.font = '700 36px "Nunito", sans-serif';
+            ctx.fillText('TRƯỜNG THPT LINH TRUNG  •  TRIỂN LÃM SỐ STEAM 3D', 700, 315);
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // Tạo poster thay thế phong cách đỏ-vàng truyền thống khi chưa có ảnh thật
+        function createFallbackPosterDataURL(art) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 600;
+            canvas.height = 800; // Tỷ lệ chuẩn 3:4
+            const ctx = canvas.getContext('2d');
+
+            // Nền đỏ đô truyền thống
+            const bgGrad = ctx.createRadialGradient(300, 260, 40, 300, 400, 520);
+            bgGrad.addColorStop(0, '#a60c0c');
+            bgGrad.addColorStop(1, '#580000');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, 600, 800);
+
+            // Viền hoa văn vàng đồng
+            ctx.strokeStyle = '#D4AF37';
+            ctx.lineWidth = 10;
+            ctx.strokeRect(18, 18, 564, 764);
+            ctx.strokeStyle = '#F3E5AB';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(30, 30, 540, 740);
+
+            // Thanh tiêu đề trên cùng
+            ctx.fillStyle = 'rgba(212, 175, 55, 0.2)';
+            ctx.fillRect(32, 32, 536, 78);
+            ctx.fillStyle = '#FFD700';
+            ctx.font = 'bold 20px "Nunito", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(art.category.toUpperCase(), 300, 78);
+
+            // Vòng tròn huy hiệu số thứ tự
+            ctx.beginPath();
+            ctx.arc(300, 240, 92, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 253, 247, 0.1)';
+            ctx.fill();
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = '#D4AF37';
+            ctx.stroke();
+
+            // Ngôi sao & số thứ tự
+            ctx.fillStyle = '#FFD700';
+            ctx.font = 'bold 34px sans-serif';
+            ctx.fillText('★', 300, 200);
+
+            ctx.fillStyle = '#FFFDF7';
+            ctx.font = '800 72px "Baloo 2", sans-serif';
+            const numStr = String(art.id).padStart(2, '0');
+            ctx.fillText(numStr, 300, 282);
+
+            // Vẽ tiêu đề xuống dòng tự động
+            ctx.fillStyle = '#F3E5AB';
+            ctx.font = '700 30px "Baloo 2", sans-serif';
+            wrapText(ctx, art.title, 300, 400, 480, 40);
+
+            // Đường phân cách
+            ctx.fillStyle = '#D4AF37';
+            ctx.fillRect(180, 520, 240, 3);
+
+            // Vẽ mô tả ngắn
+            ctx.fillStyle = 'rgba(255, 253, 247, 0.9)';
+            ctx.font = '600 20px "Nunito", sans-serif';
+            const shortDesc = art.desc.length > 155 ? art.desc.slice(0, 152) + '...' : art.desc;
+            wrapText(ctx, shortDesc, 300, 565, 480, 30);
+
+            // Ghi chú hướng dẫn ở đáy
+            ctx.fillStyle = 'rgba(243, 229, 171, 0.75)';
+            ctx.font = 'italic 16px "Nunito", sans-serif';
+            ctx.fillText(`Tư liệu số ${numStr}/20 • Nhấn "Nạp 20 ảnh" để hiển thị ảnh gốc`, 300, 742);
+
+            return canvas.toDataURL('image/jpeg', 0.9);
+        }
+
+        function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+            const words = text.split(' ');
+            let line = '';
+            let currentY = y;
+            for (let n = 0; n < words.length; n++) {
+                const testLine = line + words[n] + ' ';
+                const metrics = ctx.measureText(testLine);
+                if (metrics.width > maxWidth && n > 0) {
+                    ctx.fillText(line.trim(), x, currentY);
+                    line = words[n] + ' ';
+                    currentY += lineHeight;
+                } else {
+                    line = testLine;
+                }
+            }
+            ctx.fillText(line.trim(), x, currentY);
+        }
+
+        /* ==========================================================================
+           4. KHỞI TẠO KHÔNG GIAN BẢO TÀNG 3D (THREE.JS)
+           ========================================================================== */
+        function init3DScene() {
+            const container = document.getElementById('canvas-container');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1f1210);
+            scene.fog = new THREE.Fog(0x1f1210, 26, 60);
+
+            camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 2.25, 21.5);
+            camera.rotation.order = 'YXZ';
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            container.appendChild(renderer.domElement);
+
+            raycaster = new THREE.Raycaster();
+
+            buildLights();
+            buildGalleryRoom();
+            buildArtworks();
+        }
+
+        function buildLights() {
+            // Ánh sáng môi trường ấm áp
+            const ambient = new THREE.AmbientLight(0xfff5e4, 0.78);
+            scene.add(ambient);
+
+            // Ánh sáng bán cầu giúp tường kem và trần có chiều sâu
+            const hemi = new THREE.HemisphereLight(0xfff8eb, 0x4a3222, 0.45);
+            hemi.position.set(0, 6.5, 0);
+            scene.add(hemi);
+
+            // Hệ thống đèn chùm dọc hành lang
+            const lightZPositions = [18, 9, 0, -9, -18];
+            lightZPositions.forEach(z => {
+                const ptLight = new THREE.PointLight(0xfff0d4, 0.55, 24, 1.5);
+                ptLight.position.set(0, 5.6, z);
+                scene.add(ptLight);
+
+                // Đèn trần trang trí
+                const fixtureGeo = new THREE.CylinderGeometry(0.45, 0.35, 0.16, 20);
+                const fixtureMat = new THREE.MeshStandardMaterial({
+                    color: 0xD4AF37,
+                    metalness: 0.7,
+                    roughness: 0.25
+                });
+                const fixture = new THREE.Mesh(fixtureGeo, fixtureMat);
+                fixture.position.set(0, 6.4, z);
+                scene.add(fixture);
+
+                const bulbGeo = new THREE.CircleGeometry(0.32, 16);
+                const bulbMat = new THREE.MeshBasicMaterial({ color: 0xfff8dc });
+                const bulb = new THREE.Mesh(bulbGeo, bulbMat);
+                bulb.rotation.x = Math.PI / 2;
+                bulb.position.set(0, 6.31, z);
+                scene.add(bulb);
+            });
+        }
+
+        function buildGalleryRoom() {
+            const roomW = 14;
+            const roomH = 6.5;
+            const roomL = 50;
+
+            // Sàn đá/gỗ sáng bóng
+            const floorGeo = new THREE.PlaneGeometry(roomW, roomL);
+            const floorMat = new THREE.MeshStandardMaterial({
+                map: createFloorTexture(),
+                roughness: 0.32,
+                metalness: 0.1
+            });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            scene.add(floor);
+
+            // Thảm đỏ chạy dọc ở giữa
+            const carpetGeo = new THREE.PlaneGeometry(4.2, roomL - 2);
+            const carpetMat = new THREE.MeshStandardMaterial({
+                map: createCarpetTexture(),
+                roughness: 0.85
+            });
+            const carpet = new THREE.Mesh(carpetGeo, carpetMat);
+            carpet.rotation.x = -Math.PI / 2;
+            carpet.position.y = 0.015;
+            scene.add(carpet);
+
+            // Trần nhà
+            const ceilGeo = new THREE.PlaneGeometry(roomW, roomL);
+            const ceilMat = new THREE.MeshStandardMaterial({ color: 0xf7f1e3, roughness: 0.9 });
+            const ceiling = new THREE.Mesh(ceilGeo, ceilMat);
+            ceiling.rotation.x = Math.PI / 2;
+            ceiling.position.y = roomH;
+            scene.add(ceiling);
+
+            // Tường màu kem ấm
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0xf5ebd6, roughness: 0.85 });
+            const trimMat = new THREE.MeshStandardMaterial({ color: 0x6b0f0f, roughness: 0.6 });
+            const goldTrimMat = new THREE.MeshStandardMaterial({ color: 0xD4AF37, metalness: 0.75, roughness: 0.25 });
+
+            // Tường trái & phải
+            const sideWallGeo = new THREE.PlaneGeometry(roomL, roomH);
+            const leftWall = new THREE.Mesh(sideWallGeo, wallMat);
+            leftWall.position.set(-roomW / 2, roomH / 2, 0);
+            leftWall.rotation.y = Math.PI / 2;
+            scene.add(leftWall);
+
+            const rightWall = new THREE.Mesh(sideWallGeo, wallMat);
+            rightWall.position.set(roomW / 2, roomH / 2, 0);
+            rightWall.rotation.y = -Math.PI / 2;
+            scene.add(rightWall);
+
+            // Len chân tường & phào chỉ vàng hai bên
+            [-1, 1].forEach(side => {
+                const baseboard = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.35, roomL), trimMat);
+                baseboard.position.set(side * (roomW / 2 - 0.06), 0.175, 0);
+                scene.add(baseboard);
+
+                const crown = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.16, roomL), goldTrimMat);
+                crown.position.set(side * (roomW / 2 - 0.07), roomH - 0.08, 0);
+                scene.add(crown);
+            });
+
+            // Tường cuối phòng (hướng -Z) & Tường lối vào (hướng +Z)
+            const endWallGeo = new THREE.PlaneGeometry(roomW, roomH);
+            const backWall = new THREE.Mesh(endWallGeo, new THREE.MeshStandardMaterial({ color: 0x7c0a02, roughness: 0.7 }));
+            backWall.position.set(0, roomH / 2, -roomL / 2);
+            scene.add(backWall);
+
+            const frontWall = new THREE.Mesh(endWallGeo, wallMat);
+            frontWall.position.set(0, roomH / 2, roomL / 2);
+            frontWall.rotation.y = Math.PI;
+            scene.add(frontWall);
+
+            // Biển hiệu nổi bật ở cuối phòng: "KHÔNG GIAN VĂN HÓA HỒ CHÍ MINH"
+            const bannerGeo = new THREE.PlaneGeometry(9.6, 2.9);
+            const bannerMat = new THREE.MeshBasicMaterial({ map: createBannerTexture() });
+            const banner = new THREE.Mesh(bannerGeo, bannerMat);
+            banner.position.set(0, 3.6, -roomL / 2 + 0.08);
+            scene.add(banner);
+
+            // Bục danh dự dưới biển hiệu cuối phòng
+            const podium = new THREE.Mesh(
+                new THREE.BoxGeometry(4.5, 0.4, 1.4),
+                new THREE.MeshStandardMaterial({ color: 0x5c0000, roughness: 0.4 })
+            );
+            podium.position.set(0, 0.2, -roomL / 2 + 0.8);
+            scene.add(podium);
+        }
+
+        function buildArtworks() {
+            const frameOuterMat = new THREE.MeshStandardMaterial({
+                color: 0xD4AF37,
+                metalness: 0.75,
+                roughness: 0.25
+            });
+            const lampMat = new THREE.MeshStandardMaterial({
+                color: 0xb8860b,
+                metalness: 0.8,
+                roughness: 0.3
+            });
+            const bulbMat = new THREE.MeshBasicMaterial({ color: 0xfff6cc });
+
+            const posterW = 2.1;
+            const posterH = 2.8; // Tỷ lệ chuẩn 3:4
+
+            ARTWORKS_DATA.forEach((art, idx) => {
+                // 10 khung bên trái (0..9): đi từ z = 18 xuống z = -18
+                // 10 khung bên phải (10..19): đi từ z = -18 ngược lại z = 18 (tạo hành trình chữ U mượt mà)
+                const isLeft = idx < 10;
+                const slot = isLeft ? idx : (idx - 10);
+                const zPos = isLeft ? (18 - slot * 4.0) : (-18 + slot * 4.0);
+                const xPos = isLeft ? -6.88 : 6.88;
+                const rotY = isLeft ? Math.PI / 2 : -Math.PI / 2;
+
+                const group = new THREE.Group();
+                group.position.set(xPos, 2.55, zPos);
+                group.rotation.y = rotY;
+
+                // Khung viền vàng kim 3D
+                const frameMesh = new THREE.Mesh(
+                    new THREE.BoxGeometry(posterW + 0.22, posterH + 0.22, 0.1),
+                    frameOuterMat
+                );
+                group.add(frameMesh);
+
+                // Tạo texture mặc định bằng Canvas trước để hiển thị ngay lập tức
+                const fallbackUrl = createFallbackPosterDataURL(art);
+                artworkDataUrls[idx] = fallbackUrl;
+
+                const fallbackTex = new THREE.TextureLoader().load(fallbackUrl);
+                fallbackTex.encoding = THREE.sRGBEncoding;
+
+                const posterMat = new THREE.MeshStandardMaterial({
+                    map: fallbackTex,
+                    roughness: 0.35,
+                    metalness: 0.05
+                });
+
+                const posterMesh = new THREE.Mesh(
+                    new THREE.PlaneGeometry(posterW, posterH),
+                    posterMat
+                );
+                posterMesh.position.z = 0.056;
+                posterMesh.userData = {
+                    artworkIndex: idx,
+                    isLeft: isLeft,
+                    worldZ: zPos
+                };
+                group.add(posterMesh);
+                artworkMeshes.push(posterMesh);
+
+                // Đèn rọi tranh nhỏ gắn phía trên khung
+                const lampBar = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.9, 10), lampMat);
+                lampBar.rotation.z = Math.PI / 2;
+                lampBar.position.set(0, posterH / 2 + 0.28, 0.32);
+                group.add(lampBar);
+
+                const lampGlow = new THREE.Mesh(new THREE.PlaneGeometry(0.82, 0.08), bulbMat);
+                lampGlow.rotation.x = Math.PI / 2;
+                lampGlow.position.set(0, posterH / 2 + 0.23, 0.32);
+                group.add(lampGlow);
+
+                // Bảng số thứ tự nhỏ phía dưới khung
+                const plaque = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.22, 0.04), frameOuterMat);
+                plaque.position.set(0, -posterH / 2 - 0.28, 0.02);
+                group.add(plaque);
+
+                scene.add(group);
+
+                // Tự động thử tải ảnh thật cùng thư mục (1.jpg..20.jpg hoặc images/1.jpg..20.jpg)
+                tryAutoLoadRealImage(idx, art.id);
+            });
+        }
+
+        // Thử tải ảnh thật đặt cùng thư mục (hỗ trợ GitHub Pages không cần cấu hình thêm)
+        function tryAutoLoadRealImage(index, id) {
+            const paths = [`${id}.jpg`, `images/${id}.jpg`, `${id}.png`, `images/${id}.png`];
+            
+            function attempt(step) {
+                if (step >= paths.length) return; // Giữ nguyên poster Canvas đẹp mắt
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    applyImageToFrame(index, img, paths[step]);
+                };
+                img.onerror = () => {
+                    attempt(step + 1);
+                };
+                img.src = paths[step];
+            }
+            attempt(0);
+        }
+
+        // Dán ảnh vào khung tranh 3D tương ứng
+        function applyImageToFrame(index, imgElement, srcUrl) {
+            const texture = new THREE.Texture(imgElement);
+            texture.encoding = THREE.sRGBEncoding;
+            texture.needsUpdate = true;
+
+            const mesh = artworkMeshes[index];
+            if (mesh) {
+                if (mesh.material.map) mesh.material.map.dispose();
+                mesh.material.map = texture;
+                mesh.material.needsUpdate = true;
+            }
+            artworkDataUrls[index] = srcUrl;
+        }
+
+        /* ==========================================================================
+           5. NẠP 20 ẢNH TỪ MÁY TÍNH (TỰ ĐỘNG SẮP XẾP 1 -> 20)
+           ========================================================================== */
+        function handleLocalImageUpload(event) {
+            const files = Array.from(event.target.files || []);
+            if (files.length === 0) return;
+
+            // Sắp xếp tự nhiên theo số có trong tên file (ví dụ: 1.jpg, 2.jpg, ..., 10.jpg, 20.jpg)
+            files.sort((a, b) => {
+                const numA = parseInt((a.name.match(/\d+/) || [999])[0], 10);
+                const numB = parseInt((b.name.match(/\d+/) || [999])[0], 10);
+                if (numA !== numB) return numA - numB;
+                return a.name.localeCompare(b.name);
+            });
+
+            const count = Math.min(files.length, 20);
+            let loadedCount = 0;
+
+            for (let i = 0; i < count; i++) {
+                const file = files[i];
+                const objectUrl = URL.createObjectURL(file);
+                const img = new Image();
+                img.onload = () => {
+                    applyImageToFrame(i, img, objectUrl);
+                    loadedCount++;
+                    if (loadedCount === count) {
+                        showToast(`Đã nạp thành công ${count} ảnh lên khung tranh 3D!`, '🖼️');
+                    }
+                };
+                img.src = objectUrl;
+            }
+            event.target.value = '';
+        }
+
+        /* ==========================================================================
+           6. ĐIỀU KHIỂN CAMERA, LƯỚT TỚI TRANH & AUTO-TOUR
+           ========================================================================== */
+        function glideToArtwork(index) {
+            if (index < 0) index = 19;
+            if (index > 19) index = 0;
+            currentArtworkIndex = index;
+
+            const mesh = artworkMeshes[index];
+            const isLeft = mesh.userData.isLeft;
+            const zPos = mesh.userData.worldZ;
+
+            // Vị trí đứng trực diện cách tranh khoảng 3.4m
+            glideTargetPos.set(isLeft ? -3.45 : 3.45, 2.45, zPos);
+            // Xoay mặt thẳng vào tranh: Trái (-X) -> yaw = +PI/2; Phải (+X) -> yaw = -PI/2
+            glideTargetYaw = isLeft ? Math.PI / 2 : -Math.PI / 2;
+            glideTargetPitch = 0.02;
+            isGliding = true;
+
+            updateCounterUI();
+        }
+
+        function resetToCenterHall() {
+            stopAutoTour();
+            glideTargetPos.set(0, 2.25, 21.5);
+            glideTargetYaw = 0;
+            glideTargetPitch = 0;
+            isGliding = true;
+            showToast('Đã trở về vị trí trung tâm sảnh triển lãm', '🏛️');
+        }
+
+        function updateCounterUI() {
+            const numStr = String(currentArtworkIndex + 1).padStart(2, '0');
+            document.getElementById('artwork-counter').textContent = numStr;
+        }
+
+        function toggleAutoTour() {
+            if (isAutoTour) {
+                stopAutoTour();
+            } else {
+                isAutoTour = true;
+                document.getElementById('autotour-icon').textContent = '⏸️';
+                document.getElementById('autotour-text').textContent = 'Dừng tham quan';
+                showToast('Bắt đầu chế độ tự động tham quan 20 tác phẩm', '▶️');
+                glideToArtwork(currentArtworkIndex);
+                
+                autoTourTimer = setInterval(() => {
+                    if (!isAutoTour) return;
+                    glideToArtwork((currentArtworkIndex + 1) % 20);
+                }, 4200);
+            }
+        }
+
+        function stopAutoTour() {
+            if (!isAutoTour) return;
+            isAutoTour = false;
+            clearInterval(autoTourTimer);
+            autoTourTimer = null;
+            document.getElementById('autotour-icon').textContent = '▶️';
+            document.getElementById('autotour-text').textContent = 'Tự động tham quan';
+        }
+
+        /* ==========================================================================
+           7. MODAL XEM CHI TIẾT & THUYẾT MINH TIẾNG ANH (WEB SPEECH API)
+           ========================================================================== */
+        function openArtworkModal(index) {
+            stopAutoTour();
+            stopSpeech();
+            currentArtworkIndex = index;
+            updateCounterUI();
+
+            const art = ARTWORKS_DATA[index];
+            const numStr = String(art.id).padStart(2, '0');
+
+            document.getElementById('modal-image').src = artworkDataUrls[index];
+            document.getElementById('modal-badge').textContent = `Tác phẩm ${numStr} / 20`;
+            document.getElementById('modal-category').textContent = art.category;
+            document.getElementById('modal-title').textContent = art.title;
+            document.getElementById('modal-desc').textContent = art.desc;
+
+            const modal = document.getElementById('artwork-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeArtworkModal() {
+            stopSpeech();
+            const modal = document.getElementById('artwork-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function toggleSpeech() {
+            if (!('speechSynthesis' in window)) {
+                showToast('Trình duyệt không hỗ trợ đọc giọng nói', '⚠️');
+                return;
+            }
+            if (isSpeaking) {
+                stopSpeech();
+                return;
+            }
+
+            const art = ARTWORKS_DATA[currentArtworkIndex];
+            const textToRead = `Artwork number ${art.id}. ${art.titleEn}. ${art.descEn}`;
+            const utterance = new SpeechSynthesisUtterance(textToRead);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.95;
+
+            // Ưu tiên chọn giọng tiếng Anh (en-US, en-GB, hoặc bất kỳ giọng en-* nào có sẵn)
+            const voices = window.speechSynthesis.getVoices();
+            const enVoice =
+                voices.find(v => v.lang && v.lang.toLowerCase() === 'en-us') ||
+                voices.find(v => v.lang && v.lang.toLowerCase() === 'en-gb') ||
+                voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en'));
+            if (enVoice) utterance.voice = enVoice;
+
+            utterance.onstart = () => {
+                isSpeaking = true;
+                document.getElementById('speak-icon').textContent = '⏹️';
+                document.getElementById('speak-text').textContent = 'Đang thuyết minh (Tiếng Anh)... (Nhấn để dừng)';
+            };
+            utterance.onend = () => stopSpeech();
+            utterance.onerror = () => stopSpeech();
+
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function stopSpeech() {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+            isSpeaking = false;
+            document.getElementById('speak-icon').textContent = '🔊';
+            document.getElementById('speak-text').textContent = 'Nghe thuyết minh (Tiếng Anh)';
+        }
+
+        function showToast(message, icon = '✨') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = message;
+            document.getElementById('toast-icon').textContent = icon;
+            toast.classList.remove('opacity-0', 'translate-y-[-10px]');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            clearTimeout(toast._timer);
+            toast._timer = setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-[-10px]');
+                toast.classList.remove('opacity-100', 'translate-y-0');
+            }, 3000);
+        }
+
+        /* ==========================================================================
+           8. SỰ KIỆN TƯƠNG TÁC (CHUỘT, CẢM ỨNG, BÀN PHÍM, RAYCASTING)
+           ========================================================================== */
+        function setupEventListeners() {
+            const container = document.getElementById('canvas-container');
+
+            // Pointer Events hỗ trợ thống nhất cả chuột PC & cảm ứng Mobile
+            container.addEventListener('pointerdown', (e) => {
+                isDragging = true;
+                isGliding = false;
+                stopAutoTour();
+                dragDistance = 0;
+                pointerDownPos = { x: e.clientX, y: e.clientY };
+                lastPointerPos = { x: e.clientX, y: e.clientY };
+            });
+
+            window.addEventListener('pointermove', (e) => {
+                if (!isDragging) return;
+                const dx = e.clientX - lastPointerPos.x;
+                const dy = e.clientY - lastPointerPos.y;
+                dragDistance += Math.hypot(dx, dy);
+
+                const sensitivity = 0.0038;
+                yaw += dx * sensitivity;
+                pitch += dy * sensitivity;
+                pitch = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, pitch));
+
+                lastPointerPos = { x: e.clientX, y: e.clientY };
+            });
+
+            window.addEventListener('pointerup', (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+
+                // Nếu người dùng nhấp (không phải kéo xoay) -> kiểm tra chạm vào khung tranh 3D
+                if (dragDistance < 8) {
+                    const rect = renderer.domElement.getBoundingClientRect();
+                    const mouse = new THREE.Vector2(
+                        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+                        -((e.clientY - rect.top) / rect.height) * 2 + 1
+                    );
+                    raycaster.setFromCamera(mouse, camera);
+                    const intersects = raycaster.intersectObjects(artworkMeshes);
+                    if (intersects.length > 0) {
+                        const hitIndex = intersects[0].object.userData.artworkIndex;
+                        openArtworkModal(hitIndex);
+                    }
+                }
+            });
+
+            // Bàn phím W/A/S/D và Mũi tên
+            window.addEventListener('keydown', (e) => {
+                keysPressed[e.code] = true;
+                if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+                    isGliding = false;
+                    stopAutoTour();
+                }
+                if (e.code === 'Escape') closeArtworkModal();
+            });
+            window.addEventListener('keyup', (e) => {
+                keysPressed[e.code] = false;
+            });
+
+            // Resize màn hình linh hoạt
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // Nút UI
+            document.getElementById('btn-start-tour').addEventListener('click', () => {
+                const welcome = document.getElementById('welcome-overlay');
+                welcome.classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => welcome.style.display = 'none', 450);
+            });
+
+            document.getElementById('btn-help').addEventListener('click', () => {
+                const welcome = document.getElementById('welcome-overlay');
+                welcome.style.display = 'flex';
+                requestAnimationFrame(() => welcome.classList.remove('opacity-0', 'pointer-events-none'));
+            });
+
+            document.getElementById('btn-upload-images').addEventListener('click', () => {
+                document.getElementById('image-upload-input').click();
+            });
+            document.getElementById('image-upload-input').addEventListener('change', handleLocalImageUpload);
+
+            document.getElementById('btn-prev').addEventListener('click', () => {
+                stopAutoTour();
+                glideToArtwork(currentArtworkIndex - 1);
+            });
+            document.getElementById('btn-next').addEventListener('click', () => {
+                stopAutoTour();
+                glideToArtwork(currentArtworkIndex + 1);
+            });
+            document.getElementById('btn-autotour').addEventListener('click', toggleAutoTour);
+            document.getElementById('btn-reset').addEventListener('click', resetToCenterHall);
+
+            // Nút trong Modal
+            document.getElementById('btn-close-modal').addEventListener('click', closeArtworkModal);
+            document.getElementById('artwork-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'artwork-modal') closeArtworkModal();
+            });
+            document.getElementById('btn-speak').addEventListener('click', toggleSpeech);
+            document.getElementById('modal-prev').addEventListener('click', () => {
+                const prevIdx = (currentArtworkIndex - 1 + 20) % 20;
+                openArtworkModal(prevIdx);
+                glideToArtwork(prevIdx);
+            });
+            document.getElementById('modal-next').addEventListener('click', () => {
+                const nextIdx = (currentArtworkIndex + 1) % 20;
+                openArtworkModal(nextIdx);
+                glideToArtwork(nextIdx);
+            });
+        }
+
+        /* ==========================================================================
+           9. VÒNG LẶP RENDER 3D (ANIMATION LOOP)
+           ========================================================================== */
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // 1. Xử lý lướt mượt (Glide) đến khung tranh
+            if (isGliding) {
+                camera.position.lerp(glideTargetPos, 0.065);
+
+                // Nội suy góc xoay ngắn nhất để camera không bị quay vòng
+                let diffYaw = ((glideTargetYaw - yaw + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+                yaw += diffYaw * 0.075;
+                pitch += (glideTargetPitch - pitch) * 0.075;
+
+                if (camera.position.distanceTo(glideTargetPos) < 0.05 && Math.abs(diffYaw) < 0.01) {
+                    isGliding = false;
+                }
+            }
+
+            // 2. Xử lý di chuyển bàn phím W/A/S/D hoặc phím mũi tên
+            const moveSpeed = 0.14;
+            const forward = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+            const right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+
+            if (keysPressed['KeyW'] || keysPressed['ArrowUp']) camera.position.addScaledVector(forward, moveSpeed);
+            if (keysPressed['KeyS'] || keysPressed['ArrowDown']) camera.position.addScaledVector(forward, -moveSpeed);
+            if (keysPressed['KeyA'] || keysPressed['ArrowLeft']) camera.position.addScaledVector(right, -moveSpeed);
+            if (keysPressed['KeyD'] || keysPressed['ArrowRight']) camera.position.addScaledVector(right, moveSpeed);
+
+            // Giới hạn camera luôn nằm trong không gian phòng triển lãm
+            camera.position.x = Math.max(ROOM_BOUNDS.minX, Math.min(ROOM_BOUNDS.maxX, camera.position.x));
+            camera.position.z = Math.max(ROOM_BOUNDS.minZ, Math.min(ROOM_BOUNDS.maxZ, camera.position.z));
+
+            // Cập nhật góc xoay camera
+            camera.rotation.y = yaw;
+            camera.rotation.x = pitch;
+
+            renderer.render(scene, camera);
+        }
+
+        // Khởi chạy ứng dụng khi trang tải hoàn tất
+        window.onload = function () {
+            init3DScene();
+            setupEventListeners();
+            animate();
+        };
+    </script>
+</body>
+</html>
